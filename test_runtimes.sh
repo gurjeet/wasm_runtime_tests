@@ -12,11 +12,20 @@ fi
 # We'll do all our work in the directory where the script is
 # being executed.
 ROOT="$(pwd)"
+CAPI_ROOT="$ROOT/WASM_C_API"
+
+# TODO: Consider using Git Submodule feature, instead of cloning
+# repositories using `git clone`.
 
 function main()
 (
 	# We need a C compiler to run our tests
 	ensure_command_exists cc
+	# We need Git to download the code
+	ensure_command_exists git
+
+	info "Downloading wasm-c-api repository"
+	download_wasm_c_api
 
 	for engine in wasmtime wasmer wasmedge; do
 		if [[ "$engine" == "wasmedge" ]]; then
@@ -50,6 +59,13 @@ function ensure_command_exists()
 		|| fatal 1 "Command not found: $1"
 )
 
+function download_wasm_c_api()
+(
+	([[ -e "$CAPI_ROOT"/.git ]] && info "Repository already cloned") \
+	|| ( info "Clonig repository" \
+		&& git clone --depth 1 https://github.com/WebAssembly/wasm-c-api.git "$CAPI_ROOT")
+)
+
 ### Functions for the Wasmtime engine
 function wasmtime_check_prerequisites()
 (
@@ -80,11 +96,11 @@ function wasmtime_run_tests()
 (
 	local ENGINE_ROOT="$ROOT"/engines/wasmtime
 
-	cd "$ROOT"/example/
+	cd "$CAPI_ROOT"/example/
 
 	for F in *.c; do
 		echo -n "Testing $F ... "
-		(cc "$F" -I "$ROOT"/include/ "$ENGINE_ROOT"/target/release/libwasmtime.a -lpthread -ldl -lm -o a.out 2>&1 >/dev/null \
+		(cc "$F" -I "$CAPI_ROOT"/include/ "$ENGINE_ROOT"/target/release/libwasmtime.a -lpthread -ldl -lm -o a.out >/dev/null 2>&1 \
 			&& ./a.out 2>&1 >/dev/null && echo ok) \
 		|| echo failed;
 	done
@@ -119,11 +135,11 @@ function wasmer_run_tests()
 (
 	local ENGINE_ROOT="$ROOT"/engines/wasmer
 
-	cd "$ROOT"/example/
+	cd "$CAPI_ROOT"/example/
 
 	for F in *.c; do
 		echo -n "Testing $F ... "
-		(cc "$F" -I "$ROOT"/include/ "$ENGINE_ROOT"/target/release/libwasmer.a -lpthread -ldl -lm -o a.out 2>&1 >/dev/null \
+		(cc "$F" -I "$CAPI_ROOT"/include/ "$ENGINE_ROOT"/target/release/libwasmer.a -lpthread -ldl -lm -o a.out >/dev/null 2>&1 \
 			&& ./a.out 2>&1 >/dev/null && echo ok) \
 		|| echo failed;
 	done
