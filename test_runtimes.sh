@@ -9,20 +9,23 @@ if [[ "$BASH_VERSINFO" < "$MIN_BASH_VERSION" ]]; then
 	exit 1
 fi
 
+# We'll do all our work in the directory where the script is
+# being executed.
 ROOT="$(pwd)"
 
 function main()
 (
 	# We need a C compiler to run our tests
-	check_command_exists cc
+	ensure_command_exists cc
 
 	for engine in wasmtime wasmer wasmedge; do
 		if [[ "$engine" == "wasmedge" ]]; then
-			echo "$engine tests being skipped; these tests are not implemented, yet." >&2
+			notice "$engine tests being skipped; these tests are not implemented, yet."
 			continue;
 		fi
 
 		# Call the engine-specific functions to do the chores.
+		info "Processing $engine"
 		${engine}_check_prerequisites
 		${engine}_clone_repo
 		${engine}_build_engine
@@ -30,24 +33,35 @@ function main()
 	done
 )
 
-function check_command_exists()
+function info()		( echo "INFO: $@"	>&1 )
+function notice()	( echo "NOTICE: $@"	>&1 )
+function warning()	( echo "WARNING: $@">&2 )
+function error()	( echo "ERROR: $@"	>&2 )
+function fatal() (
+    local exitCode="$1"
+    shift
+    echo "FATAL: $@" >&2
+    exit "$exitCode"
+)
+
+function ensure_command_exists()
 (
 	( command -V "$1" 2>&1 >/dev/null ) \
-		|| (echo "Command not found: $1" >&2 && exit 1)
+		|| fatal 1 "Command not found: $1"
 )
 
 ### Functions for the Wasmtime engine
 function wasmtime_check_prerequisites()
 (
-	check_command_exists cargo
+	ensure_command_exists cargo
 )
 
 function wasmtime_clone_repo()
 (
 	local ENGINE_ROOT="$ROOT"/engines/wasmtime
 
-	([[ -d "$ENGINE_ROOT"/.git ]] && echo Repository already cloned) \
-	|| (echo cloning repository \
+	([[ -e "$ENGINE_ROOT"/.git ]] && info "Repository already cloned") \
+	|| (info "cloning repository" \
 		&& git clone --depth 1 https://github.com/bytecodealliance/wasmtime.git "$ENGINE_ROOT" \
 		&& cd "$ENGINE_ROOT" \
 		&& git submodule update --init )
@@ -79,16 +93,16 @@ function wasmtime_run_tests()
 ### Functions for the Wasmer engine
 function wasmer_check_prerequisites()
 (
-	check_command_exists cargo
-	check_command_exists make
+	ensure_command_exists cargo
+	ensure_command_exists make
 )
 
 function wasmer_clone_repo()
 (
 	local ENGINE_ROOT="$ROOT"/engines/wasmer
 
-	([[ -d "$ENGINE_ROOT"/.git ]] && echo Repository already cloned) \
-	|| (echo cloning repository \
+	([[ -e "$ENGINE_ROOT"/.git ]] && info "Repository already cloned") \
+	|| (info "cloning repository" \
 		&& git clone --depth 1 https://github.com/wasmerio/wasmer.git "$ENGINE_ROOT" )
 )
 
