@@ -29,3 +29,24 @@ Prerequisites
 3. Rust and Cargo; commands from the Rust ecosystem.
 4. A C compiler (script invokes it using `cc` command).
 
+Compatibility Status
+--------------------
+
+Legend: X => fail.
+
+| Program     | Wasmtime | Wasmer |
+|-------------|----------|--------|
+| callback.c  | pass     | pass   |
+| finalize.c  | X        | X      |
+| global.c    | X        | pass   |
+| hello.c     | pass     | pass   |
+| hostref.c   | X        | X      |
+| memory.c    | X        | pass   |
+| multi.c     | pass     | pass   |
+| reflect.c   | pass     | pass   |
+| serialize.c | pass     | pass   |
+| start.c     | X        | pass   |
+| table.c     | X        | X      |
+| threads.c   | pass     | X      |
+| trap.c      | pass     | pass   |
+
