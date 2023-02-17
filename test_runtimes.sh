@@ -27,18 +27,18 @@ function main()
 	info "Downloading wasm-c-api repository"
 	download_wasm_c_api
 
-	for engine in wasmtime wasmer wasmedge; do
-		if [[ "$engine" == "wasmedge" ]]; then
-			notice "$engine tests being skipped; these tests are not implemented, yet."
+	for runtime in wasmtime wasmer wasmedge; do
+		if [[ "$runtime" == "wasmedge" ]]; then
+			notice "$runtime tests being skipped; these tests are not implemented, yet."
 			continue;
 		fi
 
-		# Call the engine-specific functions to do the chores.
-		info "Processing $engine"
-		${engine}_check_prerequisites
-		${engine}_clone_repo
-		${engine}_build_engine
-		${engine}_run_tests
+		# Call the runtime-specific functions to do the chores.
+		info "Processing $runtime"
+		${runtime}_check_prerequisites
+		${runtime}_clone_repo
+		${runtime}_build_runtime
+		${runtime}_run_tests
 	done
 )
 
@@ -66,7 +66,7 @@ function download_wasm_c_api()
 		&& git clone --depth 1 https://github.com/WebAssembly/wasm-c-api.git "$CAPI_ROOT")
 )
 
-### Functions for the Wasmtime engine
+### Functions for the Wasmtime runtime
 function wasmtime_check_prerequisites()
 (
 	ensure_command_exists cargo
@@ -74,19 +74,19 @@ function wasmtime_check_prerequisites()
 
 function wasmtime_clone_repo()
 (
-	local ENGINE_ROOT="$ROOT"/engines/wasmtime
+	local RUNTIME_ROOT="$ROOT"/runtimes/wasmtime
 
-	([[ -e "$ENGINE_ROOT"/.git ]] && info "Repository already cloned") \
+	([[ -e "$RUNTIME_ROOT"/.git ]] && info "Repository already cloned") \
 	|| (info "cloning repository" \
-		&& git clone --depth 1 https://github.com/bytecodealliance/wasmtime.git "$ENGINE_ROOT" \
-		&& cd "$ENGINE_ROOT" \
+		&& git clone --depth 1 https://github.com/bytecodealliance/wasmtime.git "$RUNTIME_ROOT" \
+		&& cd "$RUNTIME_ROOT" \
 		&& git submodule update --init )
 )
 
-function wasmtime_build_engine()
+function wasmtime_build_runtime()
 (
-	local ENGINE_ROOT="$ROOT"/engines/wasmtime
-	cd "$ENGINE_ROOT"
+	local RUNTIME_ROOT="$ROOT"/runtimes/wasmtime
+	cd "$RUNTIME_ROOT"
 
 	# Instructions: https://docs.wasmtime.dev/contributing-building.html
 	cargo build --release --manifest-path crates/c-api/Cargo.toml
@@ -94,19 +94,19 @@ function wasmtime_build_engine()
 
 function wasmtime_run_tests()
 (
-	local ENGINE_ROOT="$ROOT"/engines/wasmtime
+	local RUNTIME_ROOT="$ROOT"/runtimes/wasmtime
 
 	cd "$CAPI_ROOT"/example/
 
 	for F in *.c; do
 		echo -n "Testing $F ... "
-		(cc "$F" -I "$CAPI_ROOT"/include/ "$ENGINE_ROOT"/target/release/libwasmtime.a -lpthread -ldl -lm -o a.out >/dev/null 2>&1 \
+		(cc "$F" -I "$CAPI_ROOT"/include/ "$RUNTIME_ROOT"/target/release/libwasmtime.a -lpthread -ldl -lm -o a.out >/dev/null 2>&1 \
 			&& ./a.out 2>&1 >/dev/null && echo ok) \
 		|| echo failed;
 	done
 )
 
-### Functions for the Wasmer engine
+### Functions for the Wasmer runtime
 function wasmer_check_prerequisites()
 (
 	ensure_command_exists cargo
@@ -115,17 +115,17 @@ function wasmer_check_prerequisites()
 
 function wasmer_clone_repo()
 (
-	local ENGINE_ROOT="$ROOT"/engines/wasmer
+	local RUNTIME_ROOT="$ROOT"/runtimes/wasmer
 
-	([[ -e "$ENGINE_ROOT"/.git ]] && info "Repository already cloned") \
+	([[ -e "$RUNTIME_ROOT"/.git ]] && info "Repository already cloned") \
 	|| (info "cloning repository" \
-		&& git clone --depth 1 https://github.com/wasmerio/wasmer.git "$ENGINE_ROOT" )
+		&& git clone --depth 1 https://github.com/wasmerio/wasmer.git "$RUNTIME_ROOT" )
 )
 
-function wasmer_build_engine()
+function wasmer_build_runtime()
 (
-	local ENGINE_ROOT="$ROOT"/engines/wasmer
-	cd "$ENGINE_ROOT"
+	local RUNTIME_ROOT="$ROOT"/runtimes/wasmer
+	cd "$RUNTIME_ROOT"
 
 	# Instructions: https://docs.wasmer.io/ecosystem/wasmer/building-from-source
 	make build-capi
@@ -133,13 +133,13 @@ function wasmer_build_engine()
 
 function wasmer_run_tests()
 (
-	local ENGINE_ROOT="$ROOT"/engines/wasmer
+	local RUNTIME_ROOT="$ROOT"/runtimes/wasmer
 
 	cd "$CAPI_ROOT"/example/
 
 	for F in *.c; do
 		echo -n "Testing $F ... "
-		(cc "$F" -I "$CAPI_ROOT"/include/ "$ENGINE_ROOT"/target/release/libwasmer.a -lpthread -ldl -lm -o a.out >/dev/null 2>&1 \
+		(cc "$F" -I "$CAPI_ROOT"/include/ "$RUNTIME_ROOT"/target/release/libwasmer.a -lpthread -ldl -lm -o a.out >/dev/null 2>&1 \
 			&& ./a.out 2>&1 >/dev/null && echo ok) \
 		|| echo failed;
 	done
